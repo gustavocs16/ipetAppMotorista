@@ -1,10 +1,20 @@
-import React from 'react';
+import React, { Component } from 'react'
 
-import { View } from 'react-native';
+import RootStackContainer from './routes'
+import { ThemeProvider } from 'styled-components'
+import { globalStyles } from './styles'
+import { setTopLevelNavigator } from './utils'
 
-
-
-const App = () => <View />;
-
-
-export default App;
+export default class App extends Component {
+  render() {
+    return (
+      <ThemeProvider theme={globalStyles}>
+        <RootStackContainer  
+          ref={navigatorRef => {
+            setTopLevelNavigator(navigatorRef)
+          }}
+        />
+      </ThemeProvider>
+    );
+  }
+}

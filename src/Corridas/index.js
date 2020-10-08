@@ -1,46 +1,82 @@
 import React, {Component} from 'react';
-import { View, TouchableOpacity, Text, FlatList, StyleSheet, ActivityIndicator} from "react-native";
+import { View, TouchableOpacity, Text, FlatList, StyleSheet, ActivityIndicator, Button,Alert, RefreshControl, AsyncStorage} from "react-native";
 import { Colors } from './Colors';
 import Icon from "react-native-vector-icons/MaterialIcons";
+import PropTypes from 'prop-types';
+import { deleteUser } from '../pages/utils';
+import HeaderCustom from '../Headers'
+import axios from 'axios'
 
-export default class Accordian extends Component{
+var token = '';
+export default class Corridas extends Component{
 
     constructor(props) {
         super(props);
         this.state = { 
             
             isLoading: true,
-            CorridaCompartilhada: [],
             CorridaParticular: [],
-            expanded : false,
-          
+            expandedParticular : false,
+            novaListaParticular: [],
+            marcado: false,
+            showAlert: false,
+            token: '',
+
+        
         }
     }
-    UrlParticular = 'https://ipettcc.azurewebsites.net/api/usuario/CorridaParticular';
-    UrlCompartilhada = 'https://ipettcc.azurewebsites.net/api/usuario/CorridaCompartilhada';
+    UrlParticular = 'http://www.ipet.kinghost.net/api/corridas/CorridaParticular';
+    
 
-    componentDidMount() {
+    _retrieveData = async () => {
+        const value = '';
+        
+        await AsyncStorage.getItem('id_token').then((keyValue) => {
+          token = keyValue;
+           //console.log(token);
+          }, (error) => {
+          //console.log(error) //Display error
+        });
+        //console.log(await AsyncStorage.getItem())
+        //console.log(value)
+        
       
-        rfetch(this.UrlParticular,{
+    };
+
+   async componentDidMount() {
+     await this._retrieveData();
+      var bearer = 'Bearer ' + token;
+      //console.log("token",token);
+      
+       
+        fetch(this.UrlParticular,{
            method: "GET",
-           headers: {
-             "Content-Type": "application/json"
-           }
+           credentials: 'include',
+           headers: {           
+            'Authorization': bearer
+          }
          })
           
           .then((response) => response.json())
           .then((responseJson) => {
+            console.log("responsejson",responseJson)
             this.setState({
               isLoading: false,
-              corridas: responseJson,
+              CorridaParticular: responseJson,
               } 
             );
           }
           )
-          .catch((error) => {console.error(error);});
-      }
+          .catch((error) => {console.log("erro fetch",error)});
+    
+      
+        };
+
+      
   
   render() {
+    
+    console.disableYellowBox = true;
 
     if (this.state.isLoading) {
         return (
@@ -49,77 +85,47 @@ export default class Accordian extends Component{
           </View>
         );
       }
-      var titulo = this.props.title;
-
+    
         return (
-            <View style={styles.container}>           
-            <View>
-            <TouchableOpacity style={styles.row} onPress={()=>this.toggleExpand()}>
-                <Text style={[styles.title, styles.font]}>Compartilhadas</Text>
-                
-                <Icon name={this.state.expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={30} color={Colors.DARKGRAY} />
-            </TouchableOpacity>
-
-            
-            <View style={styles.parentHr}/>
-            {
-                this.state.expanded &&
-                <View style={{}}>
-                    
-                    <FlatList
-                    data={this.state.CorridaCompartilhada}
-                    numColumns={1}
-                    scrollEnabled={true}
-                    keyExtractor={({item, index}) => index} 
-                    renderItem={({item, index}) => 
-                        <View>
-                            <TouchableOpacity style={[styles.childRow, styles.button, item.value ? styles.btnInActive : styles.btnActive]} onPress={()=>this.onClick(index)}>
-                                <Text style={[styles.font, styles.itemInActive]} >{item.endereco}, {item.numero}</Text>
-                                <Icon name={'check-circle'} size={24} color={ item.value ? Colors.LIGHTGRAY : Colors.GREEN} />
-                            </TouchableOpacity>
-                            <View style={styles.childHr}/>
-                        </View>
-                    }
-                    
-                    />
-                </View>
-            }
+          
 
           
-            
-       </View> 
-
-       
-
+            <View style={styles.container}>     
+                 <HeaderCustom  title={'CORRIDAS'} />  
+            <View>
+                        
+       </View>  
 
        <View>
-            <TouchableOpacity style={styles.row} onPress={()=>this.toggleExpand()}>
-                <Text style={[styles.title, styles.font]}>Particulares</Text>
+            <TouchableOpacity style={styles.row} onPress={()=>this.toggleExpandParticular()}>
+                <Text style={[styles.title]}>Corridas Pendentes</Text>
                 
-                <Icon name={this.state.expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={30} color={Colors.DARKGRAY} />
+                <Icon name={this.state.expandedParticular ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} size={30} color={Colors.SLATEBLUE} />
             </TouchableOpacity>
 
             
             <View style={styles.parentHr}/>
             {
-                this.state.expanded &&
+                this.state.expandedParticular &&
                 <View style={{}}>
                     
                     <FlatList
                     data={this.state.CorridaParticular}
-                    numColumns={1}
+                    //numColumns={1}
+                    extraData={this.state}
                     scrollEnabled={true}
                     keyExtractor={({item, index}) => index} 
                     renderItem={({item, index}) => 
                         <View>
-                            <TouchableOpacity style={[styles.childRow, styles.button, item.value ? styles.btnInActive : styles.btnActive]} onPress={()=>this.onClick(index)}>
+                            <TouchableOpacity style={[styles.childRow, styles.button, item.controleValor ? styles.btnInActive : styles.btnActive]} onPress={()=>this.onClickParticular(index)}>
                                 <Text style={[styles.font, styles.itemInActive]} >{item.endereco}, {item.numero}</Text>
-                                <Icon name={'check-circle'} size={24} color={ item.value ? Colors.LIGHTGRAY : Colors.GREEN} />
+                                <Icon name={'check-circle'} size={24} color={ item.controleValor ? Colors.LIGHTGRAY : Colors.SLATEBLUE} />
                             </TouchableOpacity>
+                            
                             <View style={styles.childHr}/>
                         </View>
                     }
-                    
+
                     />
                 </View>
             }
@@ -127,6 +133,25 @@ export default class Accordian extends Component{
           
             
        </View> 
+
+       <View style={styles.button}>
+       
+      {this.state.novaListaParticular.length > 0 &&
+       
+       
+       <Button
+       title="Iniciar Corrida"
+       color='#836FFF'
+       onPress={()=> this.props.navigation.navigate('Mapa',{resultado: this.state.novaListaParticular})}
+       />
+
+
+
+      }
+
+
+
+  </View>
                
        </View>
     )
@@ -134,14 +159,74 @@ export default class Accordian extends Component{
     
   }
 
-  onClick=(index)=>{
-    const temp = this.state.corridas.slice()
-    temp[index].value = !temp[index].value
-    this.setState({data: temp})
+
+ _addToArrayParticular = (corrida) => {
+  let tmp = this.state.novaListaParticular
+  tmp.push(corrida)
+  this.setState({ novaListaParticular: tmp })
+  //console.log("add",this.state.novaListaParticular)
+}
+
+_removeFromArrayParticular = (corrida) => {
+  let tmp = this.state.novaListaParticular
+  let index = tmp.indexOf(corrida);
+  //console.log(index)
+  if (index>-1){
+      tmp.splice(index, 1);
+      this.setState({ novaListaParticular: tmp })
   }
 
-  toggleExpand=()=>{
-    this.setState({expanded : !this.state.expanded})
+}
+
+_removerMarcacoes = () =>{
+  this.setState({novaListaParticular: []})
+  this.setState({marcado: false})
+  const temp = this.state.CorridaParticular;  
+  temp.forEach(function(item) {
+    item.controleValor = true;   
+  })
+  this.setState({CorridaParticular: this.state.CorridaParticular})
+  this.setState({ 
+    refreshing: !this.state.refreshing
+})
+}
+
+  onClickParticular=(index)=>{
+
+    const temp = this.state.CorridaParticular.slice();
+    const marc = this.state.marcado;
+
+    if(marc == false){
+      if(temp[index].controleValor == false){
+        temp[index].controleValor = !temp[index].controleValor
+        this._removeFromArrayParticular(temp[index])  
+        this.setState({CorridaParticular: temp})
+        //console.log(temp[index].controleValor)
+        }
+        else {
+          temp[index].controleValor = !temp[index].controleValor
+          this._addToArrayParticular(temp[index])  
+          this.setState({CorridaParticular: temp, marcado: true})
+        }
+    } else{
+      Alert.alert(
+        'Corridas',
+        'Você deve selecionar apenas uma corrida.',
+        [
+          {text: 'Cancelar todas', onPress: () => this._removerMarcacoes()},                
+          {text: 'OK', onPress: () => console.log('OK Pressed')},
+        ],
+        { cancelable: false }
+      )
+    }
+
+    
+    }
+    
+  
+
+  toggleExpandParticular=()=>{
+    this.setState({expandedParticular : !this.state.expandedParticular})
   }
 
 }
@@ -149,9 +234,7 @@ export default class Accordian extends Component{
 const styles = StyleSheet.create({
     container: {
         flex:1,
-        paddingTop:100,
-        backgroundColor:Colors.PRIMARY,
-        
+        backgroundColor:Colors.PRIMARY,   
        },
     font:{
        // fontFamily: Fonts.bold,
@@ -167,7 +250,7 @@ const styles = StyleSheet.create({
     title:{
         fontSize: 14,
         fontWeight:'bold',
-        color: Colors.DARKGRAY,
+        color: Colors.SLATEBLUE,
     },
     itemActive:{
         fontSize: 12,
@@ -175,13 +258,13 @@ const styles = StyleSheet.create({
     },
     itemInActive:{
         fontSize: 12,
-        color: Colors.DARKGRAY,
+        color: Colors.SLATEBLUE,
     },
     btnActive:{
         borderColor: Colors.GREEN,
     },
     btnInActive:{
-        borderColor: Colors.DARKGRAY,
+        borderColor: Colors.SLATEBLUE,
     },
     row:{
         flexDirection: 'row',
@@ -208,11 +291,41 @@ const styles = StyleSheet.create({
         width:'100%',
     },
     colorActive:{
-        borderColor: Colors.GREEN,
+        borderColor: Colors.SLATEBLUE,
     },
     colorInActive:{
-        borderColor: Colors.DARKGRAY,
+        borderColor: Colors.SLATEBLUE,
+    },
+    fixToText: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
     }
     
 });
 
+Corridas.navigationOptions = ({ navigation }) => {
+
+  return {
+    title: 'Corridas',
+    headerBackTitleVisible: true,
+    headerRight: () => (
+      <TouchableOpacity
+        onPress={() => (
+          deleteUser().then(() => {
+            navigation.navigate('AuthLoading')
+          })
+        )}
+        style={{ marginRight: 10 }}
+      >
+        <Text>Sair</Text>
+      </TouchableOpacity>
+    ),
+  };
+  
+};
+
+Corridas.propTypes = {
+  navigation: PropTypes.shape({
+    dispatch: PropTypes.func,
+  }).isRequired,
+};
